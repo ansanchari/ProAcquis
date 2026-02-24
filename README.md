@@ -1,4 +1,5 @@
 # ProAcquis: Multi-Agent AI HR Recruitment Pipeline
+* **Live Link:** (https://proacquis-areu4ipyqe7pzuaqnq7bqb.streamlit.app/)
 
 ![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?logo=streamlit&logoColor=white)
