@@ -1,0 +1,13 @@
+crewai
+python-dotenv
+chromadb
+pandas
+mistralai
+langchain-mistralai
+langchain-community
+streamlit
+PyPDF2
+plotly
+openpyxl
+fpdf2
+tenacity
