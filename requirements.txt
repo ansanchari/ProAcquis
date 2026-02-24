@@ -5,7 +5,8 @@ pandas
 mistralai
 langchain-mistralai
 langchain-community
-streamlit
+streamlit>=1.32.0
+protobuf==3.20.3
 PyPDF2
 plotly
 openpyxl
