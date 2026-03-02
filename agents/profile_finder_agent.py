@@ -1,5 +1,3 @@
-#ADVANCED SIMILARITY SEARCH
-
 import os
 from crewai import Agent
 from langchain_mistralai.chat_models import ChatMistralAI
@@ -24,7 +22,6 @@ class ProfileFinderAgent:
             model="mistral/mistral-large-latest"
         )
         
-        # Create the profile search tool
         profile_tool = ProfileSearchTool()
         
         return Agent(
@@ -43,7 +40,6 @@ class ProfileFinderAgent:
             db_manager = DBManager(path='data/chromadb_data')
             collection = db_manager.get_collection("linkedin_profiles")
             
-            # Use ChromaDB's query function for similarity search
             results = collection.query(
                 query_texts=[query],
                 n_results=top_k
@@ -52,20 +48,15 @@ class ProfileFinderAgent:
             if not results or not results['ids']:
                 return "No matching profiles found."
             
-            # Format the results in a readable way
             formatted_results = []
             
             for i in range(len(results['ids'][0])):
-                # Access document text
                 doc_text = results['documents'][0][i] if i < len(results['documents'][0]) else "No document text available"
                 
-                # Access metadata
                 metadata = results['metadatas'][0][i] if i < len(results['metadatas'][0]) else {}
                 
-                # Format profile information
                 profile_info = f"--- Profile {i+1} ---\n"
                 
-                # Add metadata if available
                 if metadata:
                     profile_info += f"Name: {metadata.get('name', 'N/A')}\n"
                     profile_info += f"Role: {metadata.get('role', 'N/A')}\n"
@@ -74,10 +65,8 @@ class ProfileFinderAgent:
                     profile_info += f"Education: {metadata.get('education', 'N/A')}\n"
                     profile_info += f"Years of Experience: {metadata.get('years_experience', 'N/A')}\n"
                 
-                # Add document text
                 profile_info += f"\nProfile Details:\n{doc_text}\n"
                 
-                # Add similarity score if available
                 if 'distances' in results and len(results['distances']) > 0:
                     score = results['distances'][0][i] if i < len(results['distances'][0]) else "N/A"
                     profile_info += f"\nRelevance Score: {score}\n"
