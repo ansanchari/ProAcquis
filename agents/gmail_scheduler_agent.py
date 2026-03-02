@@ -16,12 +16,9 @@ server.starttls()
 server.login(sender_email, sender_password)
 
 def generate_google_meet_link():
-    # In a production system, you would call the Google Calendar API to generate a Meet link.
-    # For demo purposes, we return a dummy link.
     return "https://meet.google.com/dummy-meet-link"
 
 def send_email(recipient, subject, body):
-    # Simple SMTP email sending; ensure you have less-secure apps enabled or use an App Password.
     msg = MIMEText(body)
     msg['Subject'] = subject
     msg['From'] = sender_email
@@ -29,10 +26,10 @@ def send_email(recipient, subject, body):
 
     try:
         server.send_message(msg)
-        print(f"✅ Email sent to {recipient}")
+        print(f"Email sent to {recipient}")
         return True
     except Exception as e:
-        print(f"❌ Failed to send email: {str(e)}")
+        print(f"Failed to send email: {str(e)}")
         return False
 
 class EmailSendingTool(BaseTool):
@@ -59,11 +56,11 @@ class EmailSendingTool(BaseTool):
                 """
                 success = send_email(email, subject, body)
                 if success:
-                    results.append(f"✅ Email sent to {email} with meet link: {meet_link}")
+                    results.append(f"Email sent to {email} with meet link: {meet_link}")
                 else:
-                    results.append(f"❌ Failed to send email to {email}")
+                    results.append(f"Failed to send email to {email}")
             except Exception as e:
-                results.append(f"❌ Error sending to {email}: {str(e)}")
+                results.append(f"Error sending to {email}: {str(e)}")
         
         return "\n".join(results)
 
