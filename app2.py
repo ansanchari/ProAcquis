@@ -1,6 +1,5 @@
 import PyPDF2
 import plotly.express as px
-
 import streamlit as st
 import pandas as pd
 import time
@@ -18,10 +17,8 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from fpdf import FPDF
 import base64
 
-#environment variables
 load_dotenv()
 
-#Streamlit page settings
 st.set_page_config(
     page_title="ProAcquis",
     page_icon="👥",
@@ -29,7 +26,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-#Custom CSS for styling
 st.markdown("""
 <style>
     /*Main theme colors*/
@@ -129,7 +125,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-#Initialize session state
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
     
@@ -160,32 +155,25 @@ if 'report_generated' not in st.session_state:
 if 'final_report' not in st.session_state:
     st.session_state.final_report = ""
 
-#Helper function to load synthetic profiles into ChromaDB
 @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10))
 def load_synthetic_profiles():
     with st.spinner("Loading synthetic profiles from CSV into ChromaDB..."):
         try:
-            #Load the Excel file
             profiles_df = pd.read_excel("data/cs_engineers.xlsx")
             
-            #Clear existing ChromaDB collection
             db_manager = DBManager(path='data/chromadb_data')
             try:
                 db_manager.client.delete_collection("linkedin_profiles")
             except:
                 st.write("No existing collection to delete")
             
-            #Create a new collection
             collection = db_manager.get_collection("linkedin_profiles")
             
-            #Create embeddings using MistralAI
             embedding_fn = MistralAIEmbeddings(model="mistral-embed", api_key=os.getenv('MISTRAL_API_KEY'))
             
-            #Process each profile and add to ChromaDB
             processed = 0
             for _, row in profiles_df.iterrows():
                 try:
-                    #Create a text representation of the profile
                     profile_text = f"""
                     Name: {row.get('Name', 'N/A')}
                     Role: {row.get('Role', 'N/A')}
@@ -197,10 +185,7 @@ def load_synthetic_profiles():
                     Certifications: {row.get('Certifications', 'N/A')}
                     """
                     
-                    #Create a unique ID for the profile
                     profile_id = f"profile_{row.get('Name', '').lower().replace(' ', '_')}_{processed}"
-                    
-                    #Metadata for the profile
                     metadata = {
                         "name": str(row.get('Name', 'N/A')),
                         "role": str(row.get('Role', 'N/A')),
@@ -210,7 +195,6 @@ def load_synthetic_profiles():
                         "education": str(row.get('Education', 'N/A'))
                     }
                     
-                    #Add to ChromaDB with embeddings
                     collection.add(
                         documents=[profile_text],
                         metadatas=[metadata],
@@ -220,14 +204,13 @@ def load_synthetic_profiles():
                 except Exception as e:
                     st.error(f"Error processing profile {row.get('Name', 'unknown')}: {str(e)}")
             
-            st.success(f"✅ Successfully loaded {processed} profiles into ChromaDB")
+            st.success(f" Successfully loaded {processed} profiles into ChromaDB")
             st.session_state.profiles_loaded = True
             return processed
         except Exception as e:
             st.error(f"Error loading profiles: {str(e)}")
             return 0
 
-#Function to display chat messages
 def display_chat_messages():
     for message in st.session_state.chat_history:
         if message["role"] == "user":
@@ -235,19 +218,15 @@ def display_chat_messages():
         else:
             st.markdown(f'<div class="agent-message">{message["content"]}</div>', unsafe_allow_html=True)
 
-#Function to handle HR queries
 def handle_hr_query(query):
     hr_tasks = HRTasks()
     
-    #Add user message to chat history
     st.session_state.chat_history.append({"role": "user", "content": query})
     
-    #Create a placeholder for the agent response
     message_placeholder = st.empty()
     message_placeholder.markdown('<div class="agent-message">Processing your query...</div>', unsafe_allow_html=True)
     
     try:
-        #Create a crew to answer the specific HR query using the QueryResponseAgent
         response_crew = Crew(
             agents=[hr_tasks.query_response_agent(st.session_state.recruitment_data)],
             tasks=[hr_tasks.answer_hr_query(query, st.session_state.recruitment_data)],
@@ -256,25 +235,19 @@ def handle_hr_query(query):
         
         answer = response_crew.kickoff()
         
-        #Add agent response to chat history
         st.session_state.chat_history.append({"role": "assistant", "content": str(answer)})
     except Exception as e:
-        #Handle potential errors and provide a user-friendly message
         error_message = f"I'm sorry, I encountered an issue processing your query. Error: {str(e)}"
         st.session_state.chat_history.append({"role": "assistant", "content": error_message})
     
-    #Update the placeholder with the actual response
     message_placeholder.empty()
     
-    #Re-display all messages
     display_chat_messages()
-
-#Function to generate comprehensive report
+    
 def generate_report():
     hr_tasks = HRTasks()
     
     with st.spinner("Generating comprehensive recruitment report..."):
-        #Create reporting crew
         reporting_crew = Crew(
             agents=[hr_tasks.reporting_agent()],
             tasks=[hr_tasks.generate_report()],
@@ -284,18 +257,15 @@ def generate_report():
         
         final_report = reporting_crew.kickoff()
         
-        #Store the final report in recruitment data and session state
         st.session_state.recruitment_data["report"] = str(final_report)
         st.session_state.final_report = str(final_report)
         st.session_state.report_generated = True
         
         return final_report
 
-#Function to process job role and find candidates
 def process_job_role(job_role):
     hr_tasks = HRTasks()
     
-    #Step 1: Interpret HR's query
     with st.spinner("Interpreting job role..."):
         query_crew = Crew(
             agents=[hr_tasks.hr_query_agent()],
@@ -307,19 +277,16 @@ def process_job_role(job_role):
         job_details = str(crew_output)
         interpreted_job_role = job_details.strip().replace("Job Role:", "").strip()
         
-        #Store job role in recruitment data and session state
         st.session_state.recruitment_data["job_role"] = interpreted_job_role
         st.session_state.job_role = interpreted_job_role
         ReportingAgent.add_context('job_role', interpreted_job_role)
         
         return interpreted_job_role
 
-#Function to find profiles for the job role
 def find_profiles(job_role):
     hr_tasks = HRTasks()
     
     with st.spinner("Searching for matching profiles..."):
-        #Step 2: Retrieve relevant profiles using RAG & similarity search
         profile_crew = Crew(
             agents=[hr_tasks.profile_finder_agent()],
             tasks=[hr_tasks.find_profiles(job_role)],
@@ -328,19 +295,16 @@ def find_profiles(job_role):
         
         similar_profiles = profile_crew.kickoff()
         
-        #Store profiles in recruitment data and reporting context
         st.session_state.recruitment_data["profiles"] = str(similar_profiles)
         ReportingAgent.add_context('profiles', str(similar_profiles))
         st.session_state.profiles_found = True
         
         return similar_profiles
 
-#Function to screen CVs
 def screen_cvs(job_role):
     hr_tasks = HRTasks()
     
     with st.spinner("Screening candidate CVs..."):
-        #Step 3: Screen CVs among the retrieved profiles
         screening_crew = Crew(
             agents=[hr_tasks.cv_screening_agent()],
             tasks=[hr_tasks.screen_cvs(job_role)],
@@ -349,25 +313,20 @@ def screen_cvs(job_role):
         
         screened_results = screening_crew.kickoff()
         
-        #Store screening results in recruitment data and reporting context
         st.session_state.recruitment_data["screening"] = str(screened_results)
         ReportingAgent.add_context('screening', str(screened_results))
         st.session_state.cvs_screened = True
         
         return screened_results
 
-#Function to schedule interviews
 def schedule_interviews():
     hr_tasks = HRTasks()
     
     with st.spinner("Scheduling interviews..."):
-        #For demo purposes, use a predefined list of candidate emails
-        candidate_emails = ["semantimukherjee696@gmail.com", "swatimukherjee2014@gmail.com"]
+        candidate_emails = [" ", " "]
         
-        #Get job role from session state or use default
         job_role = st.session_state.get("job_role", "Software Engineer")
         
-        #Step 4: Schedule interviews using Gmail Scheduler with job role
         scheduling_crew = Crew(
             agents=[hr_tasks.gmail_scheduler_agent()],
             tasks=[hr_tasks.schedule_interviews(candidate_emails, job_role=job_role)],
@@ -376,43 +335,34 @@ def schedule_interviews():
         
         scheduling_results = scheduling_crew.kickoff()
         
-        #Store scheduling results in recruitment data and reporting context
         st.session_state.recruitment_data["scheduling"] = str(scheduling_results)
         ReportingAgent.add_context('scheduling', str(scheduling_results))
         st.session_state.interviews_scheduled = True
         
         return scheduling_results
 
-#Function to export report to PDF
 def export_report_to_pdf(report_text):
-    #Convert report_text to string if it's not already a string
     report_str = str(report_text)
     
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
     
-    #Add title
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(200, 10, txt="Recruitment Report", ln=True, align='C')
     pdf.ln(10)
     
-    #Reset to normal font for content
     pdf.set_font("Arial", size=12)
     
-    #Process the report text line by line with proper encoding handling
     for line in report_str.split('\n'):
         try:
-            #Remove any non-Latin1 characters or replace them
             clean_line = line.encode('latin1', errors='replace').decode('latin1')
             pdf.cell(200, 10, txt=clean_line, ln=True)
         except Exception:
-            #If there's any issue with a specific line, skip it
             continue
             
     return pdf.output(dest='S').encode('latin1')
 
-#Function to create a download link for the PDF
 def create_download_link(pdf_data, filename):
     b64 = base64.b64encode(pdf_data).decode()
     href = f'<a href="data:application/octet-stream;base64,{b64}" download="{filename}">Download PDF Report</a>'
@@ -427,13 +377,11 @@ def process_uploaded_pdfs(uploaded_files):
         
         for file in uploaded_files:
             try:
-                #1. Extract text from PDF
                 pdf_reader = PyPDF2.PdfReader(file)
                 text = ""
                 for page in pdf_reader.pages:
                     text += page.extract_text() + "\n"
                 
-                #2. Create basic metadata
                 profile_id = f"pdf_{file.name.replace(' ', '_')}_{random.randint(1000, 9999)}"
                 metadata = {
                     "name": file.name.replace('.pdf', ''),
@@ -444,7 +392,6 @@ def process_uploaded_pdfs(uploaded_files):
                     "education": "Extracted from PDF"
                 }
                 
-                #3. Add to vector database
                 collection.add(
                     documents=[text],
                     metadatas=[metadata],
@@ -458,85 +405,76 @@ def process_uploaded_pdfs(uploaded_files):
             st.session_state.profiles_loaded = True
         return processed
 
-#Sidebar
 with st.sidebar:
     st.image("https://img.icons8.com/fluency/96/000000/human-resources.png")
     st.title("ProAcquis")
     st.markdown("---")
     
-    #Navigation
     page = st.radio("Navigate to", ["Dashboard", "Chat Assistant"], index=0)
     
     st.markdown("---")
     
-    #NEW: PDF Upload Section
-    st.markdown("### 📄 Upload Real Resumes")
+    st.markdown("Upload Resumes")
     uploaded_pdfs = st.file_uploader("Drop candidate PDFs here", type="pdf", accept_multiple_files=True)
     if uploaded_pdfs:
         if st.button("Process Uploaded PDFs"):
             num_processed = process_uploaded_pdfs(uploaded_pdfs)
-            st.success(f"✅ Embedded {num_processed} resumes into database!")
+            st.success(f" Embedded {num_processed} resumes into database!")
 
     st.markdown("---")
-    st.markdown("### Workflow Status")
+    st.markdown("Workflow Status")
     
-    #Status indicators
     if st.session_state.profiles_loaded:
-        st.success("✅ Profiles Database Ready")
+        st.success("Profiles Database Ready")
     else:
-        st.warning("⚠️ Profiles Not Loaded")
+        st.warning("Profiles Not Loaded")
         
     if st.session_state.job_role:
-        st.success(f"✅ Job Role: {st.session_state.job_role}")
+        st.success(f"Job Role: {st.session_state.job_role}")
     else:
-        st.warning("⚠️ No Job Role Defined")
+        st.warning("No Job Role Defined")
         
     if st.session_state.profiles_found:
-        st.success("✅ Matching Profiles Found")
+        st.success("Matching Profiles Found")
     else:
-        st.warning("⚠️ Profiles Not Searched")
+        st.warning("Profiles Not Searched")
         
     if st.session_state.cvs_screened:
-        st.success("✅ CVs Screened")
+        st.success("CVs Screened")
     else:
-        st.warning("⚠️ CVs Not Screened")
+        st.warning("CVs Not Screened")
         
     if st.session_state.interviews_scheduled:
-        st.success("✅ Interviews Scheduled")
+        st.success("Interviews Scheduled")
     else:
-        st.warning("⚠️ Interviews Not Scheduled")
+        st.warning("Interviews Not Scheduled")
         
     if st.session_state.report_generated:
-        st.success("✅ Final Report Generated")
+        st.success("Final Report Generated")
     else:
-        st.warning("⚠️ Report Not Generated")
+        st.warning("Report Not Generated")
     
-#Main content
 def render_analytics_dashboard():
     try:
         db_manager = DBManager(path='data/chromadb_data')
         collection = db_manager.get_collection("linkedin_profiles")
         
-        #Pull all data from ChromaDB
         data = collection.get()
         
         if not data or not data['metadatas']:
             st.info("Not enough data to generate analytics yet. Please load profiles.")
             return
 
-        #Convert metadata into a Pandas DataFrame for easy plotting
         df = pd.DataFrame(data['metadatas'])
         
-        #Clean up 'years_experience' to ensure it's a number for the chart
         df['years_experience'] = pd.to_numeric(df['years_experience'], errors='coerce').fillna(0)
 
         st.markdown("---")
-        st.markdown("### 📊 Candidate Pool Analytics")
+        st.markdown("Candidate Pool Analytics")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            #Chart 1: Experience Histogram
             fig_exp = px.histogram(
                 df, 
                 x="years_experience", 
@@ -548,7 +486,6 @@ def render_analytics_dashboard():
             st.plotly_chart(fig_exp, use_container_width=True)
 
         with col2:
-            #Chart 2: Location Donut Chart
             if 'location' in df.columns:
                 loc_counts = df['location'].value_counts().reset_index()
                 loc_counts.columns = ['Location', 'Count']
@@ -570,24 +507,20 @@ if page == "Dashboard":
     st.title("HR Recruitment Dashboard")
     st.markdown("Streamline your recruitment process with AI-powered automation")
     
-    #Initialize database
     if not st.session_state.profiles_loaded:
         if st.button("Load Candidate Database"):
             num_profiles = load_synthetic_profiles()
             if num_profiles > 0:
                 st.success(f"Successfully loaded {num_profiles} profiles into the database")
     
-    #Job role input form
     with st.form("job_role_form"):
         job_role_input = st.text_input("Enter Job Role to Search For:", placeholder="e.g., Senior Python Developer")
         submitted = st.form_submit_button("Start Recruitment Process")
         
         if submitted and job_role_input:
-            #Process the job role
             interpreted_job_role = process_job_role(job_role_input)
             st.success(f"Job role interpreted as: {interpreted_job_role}")
     
-    #Show workflow steps in columns
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -599,7 +532,7 @@ if page == "Dashboard":
                 with st.expander("Show Matching Profiles"):
                     st.text(similar_profiles)
         elif st.session_state.profiles_found:
-            st.success("✅ Profiles Found")
+            st.success("Profiles Found")
             with st.expander("Show Matching Profiles"):
                 st.text(st.session_state.recruitment_data.get("profiles", "No profiles data available"))
     
@@ -612,7 +545,7 @@ if page == "Dashboard":
                 with st.expander("Show Screening Results"):
                     st.text(screened_results)
         elif st.session_state.cvs_screened:
-            st.success("✅ Candidates Screened")
+            st.success("Candidates Screened")
             with st.expander("Show Screening Results"):
                 st.text(st.session_state.recruitment_data.get("screening", "No screening data available"))
     
@@ -625,19 +558,16 @@ if page == "Dashboard":
                 with st.expander("Show Scheduling Details"):
                     st.text(scheduling_results)
         elif st.session_state.interviews_scheduled:
-            st.success("✅ Interviews Scheduled")
+            st.success("Interviews Scheduled")
             with st.expander("Show Scheduling Details"):
                 st.text(st.session_state.recruitment_data.get("scheduling", "No scheduling data available"))
 
 
-    #Render the analytics dashboard if profiles are loaded
     if st.session_state.profiles_loaded:
         render_analytics_dashboard()
 
-    #Generate final report
     if st.session_state.interviews_scheduled:
 
-    #Generate final report
         if st.session_state.interviews_scheduled:
             st.markdown("### Final Report")
             if not st.session_state.report_generated:
@@ -658,7 +588,6 @@ elif page == "Chat Assistant":
     st.title("HR Assistant Chat")
     st.markdown("Ask questions about candidates, recruitment process, or get specific insights")
     
-    #Check if profiles are loaded
     if not st.session_state.profiles_loaded:
         st.warning("Please load the candidate database first from the Dashboard")
         if st.button("Load Candidate Database"):
@@ -666,26 +595,20 @@ elif page == "Chat Assistant":
             if num_profiles > 0:
                 st.success(f"Successfully loaded {num_profiles} profiles into the database")
     
-    #Chat interface
     st.markdown("### Chat with HR Assistant")
     
-    #Display chat messages
     display_chat_messages()
     
-    #Create a callback to set the clear flag
     def set_clear_flag():
         if chat_input.strip():  # Only set flag if there's actual input
             st.session_state.should_clear_input = True
     
-    #Chat input with a callback
     col1, col2 = st.columns([5, 1])
     with col1:
-        #Use an empty string as default value when should_clear_input is True
         default_value = "" if st.session_state.get("should_clear_input", False) else st.session_state.get("chat_input", "")
         chat_input = st.text_input("Type your question here:", key="chat_input", 
                                   value=default_value,
                                   placeholder="e.g., Who are the top candidates for the position?")
-        #Reset the clear flag once used
         if st.session_state.should_clear_input:
             st.session_state.should_clear_input = False
     
@@ -694,9 +617,7 @@ elif page == "Chat Assistant":
     
     if send_button and chat_input:
         handle_hr_query(chat_input)
-        #No direct modification of st.session_state.chat_input here
     
-    #Quick action buttons
     st.markdown("### Quick Actions")
     quick_actions = st.columns(3)
     
@@ -713,7 +634,5 @@ elif page == "Chat Assistant":
         if st.button("Candidate Statistics"):
             handle_hr_query("Give me statistics about the candidate pool")
 
-#Run the app 
 if __name__ == "__main__":
-    #The app is already running through Streamlit
     pass
