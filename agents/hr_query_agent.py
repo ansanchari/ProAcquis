@@ -9,8 +9,8 @@ class HRQueryAgent:
         llm = ChatMistralAI(
             api_key=os.getenv("MISTRAL_API_KEY"),
             model="mistral/mistral-large-latest",
-            temperature=0.3,  # Lower temperature for more consistent responses
-            max_retries=5,  # Add retry mechanism for API calls
+            temperature=0.3,
+            max_retries=5,
             retry_min_seconds=4,
             retry_max_seconds=60
         )
