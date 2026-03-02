@@ -33,7 +33,6 @@ class HRTasks:
     def query_response_agent(self, recruitment_data):
         return QueryResponseAgent.agent(recruitment_data)
 
-    # Existing task to handle HR query.
     def handle_hr_query(self, hr_query):
         return Task(
             description=(f"Interpret this HR query: '{hr_query}'. Clearly specify the exact job role and essential skills. "
@@ -42,7 +41,6 @@ class HRTasks:
             expected_output="Identified job role and essential skills."
         )
 
-    # Task for running the LinkedIn search (to be executed occasionally for database population)
     def run_linkedin_search(self, query):
         return Task(
             description=f"Search for LinkedIn usernames using query: '{query}'.",
@@ -50,9 +48,7 @@ class HRTasks:
             expected_output="List of LinkedIn usernames."
         )
 
-    # Task for populating the database by collecting detailed data
     def populate_database(self, usernames):
-        # Convert usernames list to string for task description
         usernames_str = ", ".join(usernames) if isinstance(usernames, list) else str(usernames)
         
         return Task(
@@ -61,7 +57,6 @@ class HRTasks:
             expected_output="Confirmation that the profiles were successfully fetched and stored."
         )
 
-    # Task for finding profiles from the persistent store using similarity search
     def find_profiles(self, job_description):
         return Task(
             description=f"Search the candidate profiles in the database that are similar to: '{job_description}'.",
@@ -69,12 +64,9 @@ class HRTasks:
             expected_output="List of similar candidate profiles."
         )
 
-    # Updated task for scheduling interviews using Gmail integration.
     def schedule_interviews(self, candidate_emails, job_role="Software Engineer"):
-        # Convert the list of emails to a comma-separated string
         emails_str = ", ".join(candidate_emails) if isinstance(candidate_emails, list) else str(candidate_emails)
         
-        # Create the task with job_role in description
         return Task(
             description=f"Schedule interviews for the '{job_role}' position with the following candidates: {emails_str}. Send them personalized emails with Google Meet links. Job role: {job_role}",
             agent=self.gmail_scheduler_agent(),
