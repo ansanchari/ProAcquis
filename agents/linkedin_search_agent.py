@@ -38,7 +38,6 @@ def search_linkedin_profiles(query, api_key):
 class LinkedInSearchAgent:
     @staticmethod
     def agent():
-        # The agent only wraps the functionality for logging and describing its role
         llm = ChatMistralAI(
             api_key=os.getenv("MISTRAL_API_KEY"),
             model="mistral/mistral-large-latest"
@@ -49,7 +48,6 @@ class LinkedInSearchAgent:
             backstory="Efficiently extract LinkedIn usernames by querying Google with a given job search string.",
             llm=llm,
             allow_delegation=False,
-            # Here you can bind the search function to the agent if your framework supports it
         )
 
 
