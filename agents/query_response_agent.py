@@ -10,7 +10,6 @@ class QueryDatabaseTool(BaseTool):
     description: str = "Queries the candidate database to answer HR-related questions"
     
     def _run(self, query: str) -> str:
-        """Answer HR queries using information from the database"""
         results = QueryResponseAgent.answer_query(query)
         return results
 
@@ -19,7 +18,6 @@ class RetrieveReportTool(BaseTool):
     description: str = "Retrieves recruitment report data and statistics"
     
     def _run(self, report_type: str = "full") -> str:
-        """Retrieve recruitment report data"""
         results = QueryResponseAgent.get_report_data(report_type)
         return results
 
@@ -53,7 +51,6 @@ class QueryResponseAgent:
 
     @staticmethod
     def answer_query(query):
-        """Answer HR queries by searching the database and using context"""
         try:
             if QueryResponseAgent.recruitment_data:
                 
@@ -132,7 +129,7 @@ class QueryResponseAgent:
                     return "No screening results available yet."
             
             else:
-                report = "=== RECRUITMENT REPORT ===\n\n"
+                report = " RECRUITMENT REPORT \n\n"
                 
                 if "job_role" in QueryResponseAgent.recruitment_data:
                     report += f"JOB ROLE: {QueryResponseAgent.recruitment_data.get('job_role')}\n\n"
