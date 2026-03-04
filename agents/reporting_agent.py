@@ -9,7 +9,6 @@ class ReportingTool(BaseTool):
     description: str = "Generates comprehensive reports based on recruitment data"
     
     def _run(self, query: str = "Generate recruitment report") -> str:
-        """Generate a comprehensive recruitment report"""
         return ReportingAgent.generate_report()
 
 class ReportingAgent:
@@ -17,7 +16,6 @@ class ReportingAgent:
     
     @staticmethod
     def add_context(stage, data):
-        """Add data to the recruitment context"""
         ReportingAgent.recruitment_context[stage] = data
     
     @staticmethod
@@ -40,7 +38,6 @@ class ReportingAgent:
     
     @staticmethod
     def generate_report():
-        """Generate a comprehensive report based on collected context"""
         try:
             db_manager = DBManager(path='data/chromadb_data')
             collection = db_manager.get_collection("linkedin_profiles")
@@ -50,7 +47,7 @@ class ReportingAgent:
                 n_results=3
             )
             
-            report = "=== COMPREHENSIVE RECRUITMENT REPORT ===\n\n"
+            report = " COMPREHENSIVE RECRUITMENT REPORT \n\n"
             
             if 'job_role' in ReportingAgent.recruitment_context:
                 report += f"JOB POSITION:\n"
