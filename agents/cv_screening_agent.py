@@ -10,7 +10,6 @@ class CVSearchTool(BaseTool):
     description: str = "Searches and screens candidate profiles based on job requirements"
     
     def _run(self, query: str, top_k: int = 5) -> str:
-        """Search for profiles and screen them based on job requirements"""
         results = CVScreeningAgent.search_and_screen_profiles(query, top_k)
         return results
 
@@ -102,7 +101,7 @@ class CVScreeningAgent:
             
             screened_results.sort(key=lambda x: x[0], reverse=True)
             
-            final_output = "=== CV SCREENING RESULTS ===\n\n"
+            final_output = " CV SCREENING RESULTS \n\n"
             final_output += f"Screened {len(screened_results)} candidates from the database for job: {job_description}\n\n"
             final_output += "Candidates Ranked by Suitability (DATABASE PROFILES ONLY):\n\n"
             
