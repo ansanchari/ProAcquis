@@ -11,10 +11,8 @@ from langchain_mistralai import MistralAIEmbeddings
 load_dotenv()
 
 def load_synthetic_profiles():
-    """Load synthetic profiles from CSV and create embeddings for ChromaDB"""
     print("\n LOADING SYNTHETIC PROFILES ")
     
-    #Try multiple approaches to load the Excel file
     profiles_df = None
     approaches = [
         lambda: pd.read_excel("data/cs_engineers.xlsx"),
@@ -98,8 +96,7 @@ def load_synthetic_profiles():
     return processed
 
 def process_uploaded_pdfs(pdf_file_paths):
-    """CLI version: Provide a list of file paths (strings) to process PDFs"""
-    print(f"\n===== EXTRACTING AND EMBEDDING {len(pdf_file_paths)} RESUMES =====")
+    print(f"\nEXTRACTING AND EMBEDDING {len(pdf_file_paths)} RESUMES ")
     processed = 0
     db_manager = DBManager(path='data/chromadb_data')
     collection = db_manager.get_collection("linkedin_profiles")
@@ -212,7 +209,7 @@ def main():
     
     recruitment_data["report"] = str(final_report)
 
-    print("\n\n===== HR Interactive Query Mode =====")
+    print("\n\n HR Interactive Query Mode ")
     print("You can now ask questions about the recruitment process, candidates, or reports.")
     print("Type 'exit' to quit.")
     
