@@ -37,7 +37,6 @@ class EmailSendingTool(BaseTool):
     description: str = "Schedules interviews by sending emails with Google Meet links"
     
     def _run(self, emails_str: str) -> str:
-        # Parse email addresses from the input string
         emails = [e.strip() for e in emails_str.split(',')]
         results = []
         
