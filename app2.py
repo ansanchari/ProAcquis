@@ -38,24 +38,20 @@ st.markdown("""
         --light-accent: #E2E8F0;      
     }
     
-    /*Target Streamlit's main app wrapper for background*/
     .stApp {
         background-color: var(--background-color) !important;
         color: var(--text-color) !important;
     }
     
-    /*Force header colors*/
     h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
         color: var(--primary-color) !important;
     }
     
-    /*Card styling for dashboard components*/
     div[data-testid="stVerticalBlock"] > div {
         /* This applies a slight card effect to grouped elements */
         border-radius: 8px;
     }
     
-    /*Custom button styling - requires !important to override Streamlit*/
     .stButton > button {
         background-color: var(--primary-color) !important;
         color: white !important;
@@ -72,7 +68,6 @@ st.markdown("""
         color: white !important;
     }
     
-    /*Chat container styling*/
     .chat-container {
         border: 1px solid #ddd;
         border-radius: 8px;
@@ -82,7 +77,6 @@ st.markdown("""
         background-color: white;
     }
     
-    /*Dashboard metric styling*/
     .metric-card {
         background-color: white;
         padding: 15px;
@@ -101,7 +95,6 @@ st.markdown("""
         color: var(--secondary-color) !important;
     }
     
-    /*Chat message styling*/
     .user-message {
         background-color: var(--light-accent);
         color: var(--text-color);
