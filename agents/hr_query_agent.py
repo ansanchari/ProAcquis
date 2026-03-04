@@ -24,5 +24,5 @@ class HRQueryAgent:
             llm=llm,
             allow_delegation=True,
             max_rpm=5,  # Limit requests per minute
-            max_execution_time=300  # Allow more time for retries
+            max_execution_time=300  
         )
